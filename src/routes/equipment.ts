@@ -3,17 +3,21 @@ import { supabase, type EquipmentWithAvailability } from '../supabase.js';
 
 const router = Router();
 
-// GET /api/equipment - List all equipment with availability
+// GET /api/equipment - List all equipment with availability (paginated)
 router.get('/', async (req, res) => {
   try {
-    const { category, search, availability } = req.query;
+    const { category, search, availability, page = '1', limit = '25' } = req.query;
+    
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 25));
+    const offset = (pageNum - 1) * limitNum;
     
     let query = supabase
       .from('equipment_catalog')
       .select(`
         *,
         in_house:in_house_inventory(*)
-      `)
+      `, { count: 'exact' })
       .eq('is_active', true);
 
     // Filter by category
@@ -26,7 +30,13 @@ router.get('/', async (req, res) => {
       query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
     }
 
-    const { data: equipment, error } = await query;
+    // Apply pagination
+    query = query.range(offset, offset + limitNum - 1);
+    
+    // Order by name
+    query = query.order('name');
+
+    const { data: equipment, error, count } = await query;
 
     if (error) throw error;
 
@@ -42,7 +52,7 @@ router.get('/', async (req, res) => {
       };
     });
 
-    // Filter by availability if requested
+    // Filter by availability if requested (post-query filter)
     let filtered = transformed;
     if (availability === 'in-house') {
       filtered = transformed.filter(e => e.availability === 'in-house');
@@ -50,9 +60,19 @@ router.get('/', async (req, res) => {
       filtered = transformed.filter(e => e.availability === 'partner');
     }
 
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / limitNum);
+
     res.json({
       data: filtered,
-      count: filtered.length
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        totalCount,
+        totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1
+      }
     });
   } catch (err) {
     console.error('Error fetching equipment:', err);

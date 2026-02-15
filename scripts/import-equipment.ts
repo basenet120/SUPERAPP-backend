@@ -101,13 +101,13 @@ async function importEquipment() {
   const partnerId = partner.id;
   console.log('Partner ID:', partnerId);
   
-  // Import first 20 items as sample
-  const sampleItems = items.slice(0, 20);
+  // Import all items
+  console.log('Importing all items...');
   
   let success = 0;
   let failed = 0;
   
-  for (const item of sampleItems) {
+  for (const item of items) {
     const partnerPrice = parsePrice(item['KM PRICE']);
     const retailPrice = parsePrice(item['Selling Price']);
     
