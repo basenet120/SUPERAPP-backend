@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import equipmentRoutes from './routes/equipment.js';
 import quotesRoutes from './routes/quotes.js';
+import inventoryRoutes from './routes/inventory.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/quotes', quotesRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
