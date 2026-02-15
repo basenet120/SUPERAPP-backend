@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
+import { createQBEstimate } from './quickbooks.js';
 
 const router = Router();
 
@@ -106,13 +107,38 @@ router.post('/', async (req, res) => {
         });
     }
 
+    // Create QuickBooks estimate (if connected)
+    let qbEstimate = null;
+    try {
+      qbEstimate = await createQBEstimate({
+        clientName,
+        clientEmail,
+        clientPhone,
+        clientCompany,
+        startDate,
+        endDate,
+        duration,
+        items,
+        pricing,
+        notes
+      });
+      console.log('QB Estimate created:', qbEstimate.Id);
+    } catch (qbErr) {
+      console.error('Failed to create QB estimate:', qbErr);
+      // Don't fail the quote if QB fails
+    }
+
     res.status(201).json({
       success: true,
       quote: {
         id: quote.id,
         quoteNumber: quote.quote_number,
         total: pricing.total
-      }
+      },
+      qbEstimate: qbEstimate ? {
+        id: qbEstimate.Id,
+        docNumber: qbEstimate.DocNumber
+      } : null
     });
   } catch (err) {
     console.error('Error creating quote:', err);

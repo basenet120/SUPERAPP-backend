@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import equipmentRoutes from './routes/equipment.js';
 import quotesRoutes from './routes/quotes.js';
 import inventoryRoutes from './routes/inventory.js';
+import quickbooksRoutes from './routes/quickbooks.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/quotes', quotesRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/quickbooks', quickbooksRoutes);
 
 // Error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
