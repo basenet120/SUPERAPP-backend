@@ -114,8 +114,89 @@ ALTER TABLE equipment_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE in_house_inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE equipment_categories ENABLE ROW LEVEL SECURITY;
 
+-- Quotes table
+CREATE TABLE quotes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    quote_number VARCHAR(50) UNIQUE NOT NULL,
+    
+    -- Client info
+    client_name VARCHAR(100) NOT NULL,
+    client_email VARCHAR(255) NOT NULL,
+    client_phone VARCHAR(50),
+    client_company VARCHAR(100),
+    
+    -- Rental period
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    duration_days INTEGER NOT NULL,
+    
+    -- Status
+    status VARCHAR(50) DEFAULT 'pending', -- pending, approved, rejected, expired
+    
+    -- Pricing (stored as JSON for flexibility)
+    pricing JSONB NOT NULL,
+    deposit_required DECIMAL(10,2),
+    deposit_paid DECIMAL(10,2) DEFAULT 0,
+    
+    -- Notes
+    notes TEXT,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Quote items (line items)
+CREATE TABLE quote_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    quote_id UUID REFERENCES quotes(id) ON DELETE CASCADE,
+    equipment_id UUID REFERENCES equipment_catalog(id),
+    sku VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL,
+    daily_rate DECIMAL(10,2),
+    total_price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Leads (CRM)
+CREATE TABLE leads (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    company VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'new', -- new, contacted, quote_requested, qualified, lost
+    source VARCHAR(50),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_equipment_category ON equipment_catalog(category);
+CREATE INDEX idx_equipment_sku ON equipment_catalog(sku);
+CREATE INDEX idx_equipment_partner ON equipment_catalog(partner_id);
+CREATE INDEX idx_inventory_catalog ON in_house_inventory(catalog_id);
+CREATE INDEX idx_quotes_email ON quotes(client_email);
+CREATE INDEX idx_quotes_status ON quotes(status);
+CREATE INDEX idx_leads_email ON leads(email);
+CREATE INDEX idx_leads_status ON leads(status);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE rental_partners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment_catalog ENABLE ROW LEVEL SECURITY;
+ALTER TABLE in_house_inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+
 -- Create policies (allow all for now - will restrict later)
 CREATE POLICY "Allow all" ON rental_partners FOR ALL USING (true);
 CREATE POLICY "Allow all" ON equipment_catalog FOR ALL USING (true);
 CREATE POLICY "Allow all" ON in_house_inventory FOR ALL USING (true);
 CREATE POLICY "Allow all" ON equipment_categories FOR ALL USING (true);
+CREATE POLICY "Allow all" ON quotes FOR ALL USING (true);
+CREATE POLICY "Allow all" ON quote_items FOR ALL USING (true);
+CREATE POLICY "Allow all" ON leads FOR ALL USING (true);
